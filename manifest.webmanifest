@@ -1,0 +1,12 @@
+{
+  "name": "רוטשילד 78 · העלאת קבלה",
+  "short_name": "העלאת קבלה",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f1e8",
+  "theme_color": "#153d35",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}

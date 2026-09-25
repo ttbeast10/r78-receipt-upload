@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; manifest-src 'self'; connect-src https://script.google.com https://script.googleusercontent.com; form-action 'none'; base-uri 'none'">
+  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#153d35">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>העלאת קבלה · רוטשילד 78</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="brand"><span class="mark">78</span><span>רוטשילד 78</span></header>
+    <p class="demo-banner" id="demo-banner" hidden>מצב הדגמה · התמונות נשמרות במחשב בלבד ולא נשלחות ל-Drive</p>
+    <p class="demo-banner" id="pilot-banner" hidden>שלב ניסיון · העלו קובץ בדיקה בלבד, לא קבלה אמיתית.</p>
+    <p class="demo-banner" id="lan-banner" hidden>ניסוי ברשת המקומית · החיבור אינו מוצפן. העלו קובץ בדיקה בלבד, לא קבלה אמיתית.</p>
+    <section class="card" id="pair-panel" hidden>
+      <p class="eyebrow">הגדרת מכשיר</p>
+      <h1>חיבור הטלפון</h1>
+      <p>המנהל מזין את קוד ההתקנה פעם אחת. לאחר מכן העובדים יראו רק מסך העלאת קבלה.</p>
+      <form id="pair-form">
+        <label for="pair-code">קוד התקנה</label>
+        <input id="pair-code" name="code" type="password" autocomplete="off" required>
+        <button type="submit">חיבור המכשיר</button>
+      </form>
+    </section>
+    <section class="card" id="upload-panel" hidden>
+      <p class="eyebrow">קבלה חדשה</p>
+      <h1>מעלים קבלה</h1>
+      <p>צלמו את כל הקבלה, כולל תאריך וסכום. בדקו שהתמונה ברורה לפני השליחה.</p>
+      <form id="upload-form">
+        <label class="camera-picker" for="camera-file"><span class="camera">▣</span><strong>צלם קבלה</strong><span>פתיחת מצלמת הטלפון</span></label>
+        <input id="camera-file" name="camera" type="file" accept="image/*" capture="environment">
+        <label class="library-picker" for="receipt-file">או בחר תמונה / PDF שכבר שמורים בטלפון</label>
+        <input id="receipt-file" name="receipt" type="file" accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.heic,.heif">
+        <div class="preview" id="preview" hidden>
+          <img id="preview-image" alt="תצוגה מקדימה של הקבלה" hidden>
+          <p id="preview-name"></p>
+          <p class="preview-hint">לא ברור? לחצו שוב על ״צלם קבלה״ לצילום חוזר.</p>
+        </div>
+        <button id="upload-button" type="submit" disabled>העלאת קבלה</button>
+      </form>
+      <p class="small">הקבלה תועבר לבדיקת המנהל. אין צורך להזין סכומים או פרטי ספק.</p>
+    </section>
+    <div id="message" role="status" aria-live="polite"></div>
+  </main>
+</body>
+</html>
