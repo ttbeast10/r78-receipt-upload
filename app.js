@@ -20,6 +20,7 @@ let lanPilotMode = false;
 let pilotMode = false;
 const config = window.R78_CONFIG || {mode: 'gateway'};
 const TOKEN_KEY = 'r78_device_token';
+const PILOT_KEY = 'r78_pilot';
 
 // Browser storage can be missing (private mode) or cleared by the browser; the phone then pairs again.
 function storedToken() {
@@ -28,6 +29,21 @@ function storedToken() {
 
 function storeToken(value) {
   try { value ? localStorage.setItem(TOKEN_KEY, value) : localStorage.removeItem(TOKEN_KEY); } catch {}
+}
+
+// The last pilot flag the web app reported, so the banner is right before the web app answers. Unknown → shown.
+function storedPilot() {
+  try { return localStorage.getItem(PILOT_KEY) !== 'false'; } catch { return true; }
+}
+
+function storePilot(value) {
+  try { localStorage.setItem(PILOT_KEY, String(Boolean(value))); } catch {}
+}
+
+// Token shape v1.<expiry ms>.<nonce>.<signature>. Only the expiry is read here; the web app checks the signature.
+function tokenLooksValid(token) {
+  const parts = token.split('.');
+  return parts.length === 4 && parts[0] === 'v1' && Number(parts[1]) > Date.now();
 }
 
 function fileAsBase64(file) {
@@ -103,19 +119,44 @@ function showMessage(text, kind) {
   message.className = `show ${kind}`;
 }
 
+function applySession(session) {
+  demoMode = Boolean(session.preview);
+  lanPilotMode = Boolean(session.lan_pilot);
+  pilotMode = Boolean(session.pilot);
+  demoBanner.hidden = !demoMode;
+  lanBanner.hidden = !lanPilotMode;
+  pilotBanner.hidden = !pilotMode;
+  pairPanel.hidden = session.paired;
+  uploadPanel.hidden = !session.paired;
+}
+
+function connectionError(error) {
+  return error instanceof TypeError || error instanceof SyntaxError || !error.message ? 'אין חיבור לשרת. בדקו את הרשת ונסו שוב.' : error.message;
+}
+
 async function showSession() {
   try {
-    const session = await api.session();
-    demoMode = Boolean(session.preview);
-    lanPilotMode = Boolean(session.lan_pilot);
-    pilotMode = Boolean(session.pilot);
-    demoBanner.hidden = !demoMode;
-    lanBanner.hidden = !lanPilotMode;
-    pilotBanner.hidden = !pilotMode;
-    pairPanel.hidden = session.paired;
-    uploadPanel.hidden = !session.paired;
+    applySession(await api.session());
   } catch (error) {
-    showMessage(error instanceof TypeError || error instanceof SyntaxError || !error.message ? 'אין חיבור לשרת. בדקו את הרשת ונסו שוב.' : error.message, 'error');
+    showMessage(connectionError(error), 'error');
+  }
+}
+
+// Apps Script takes 2–12 s to answer, so the page first shows what the stored token implies and then
+// confirms with the web app in the background. Uploads are still refused by the web app without a valid token.
+async function showSessionFast() {
+  const token = storedToken();
+  applySession({paired: tokenLooksValid(token), pilot: storedPilot()});
+  try {
+    const session = await api.session();
+    // Pairing may have finished while this check was running; its answer is newer than this one.
+    if (storedToken() !== token) return;
+    storePilot(session.pilot);
+    if (!session.paired) storeToken('');
+    applySession(session);
+  } catch (error) {
+    // The optimistic screen stays usable; an upload reports its own connection error.
+    if (!tokenLooksValid(token)) showMessage(connectionError(error), 'error');
   }
 }
 
@@ -128,7 +169,13 @@ pairForm.addEventListener('submit', async event => {
     if (!result.ok) throw new Error(result.error);
     pairForm.reset();
     message.className = '';
-    await showSession();
+    // The web app's pairing answer already says everything the screen needs; no second slow call.
+    if (config.mode === 'apps-script') {
+      storePilot(result.pilot);
+      applySession({paired: true, pilot: result.pilot});
+    } else {
+      await showSession();
+    }
   } catch (error) {
     showMessage(error.message || 'לא ניתן לחבר את המכשיר.', 'error');
   } finally {
@@ -172,10 +219,17 @@ uploadForm.addEventListener('submit', async event => {
     const result = await api.upload(file, pendingId);
     if (result.code === 'unpaired') {
       uploadButton.disabled = false;
-      await showSession();
+      // The web app has refused this phone's token (callWebApp already cleared it): show pairing at once.
+      if (config.mode === 'apps-script') applySession({paired: false, pilot: pilotMode});
+      else await showSession();
       return showMessage(result.error || 'המכשיר אינו מוגדר. פנו למנהל.', 'error');
     }
     if (!result.ok) throw new Error(result.error);
+    if (config.mode === 'apps-script' && 'pilot' in result) {
+      storePilot(result.pilot);
+      pilotMode = Boolean(result.pilot);
+      pilotBanner.hidden = !pilotMode;
+    }
     showMessage(demoMode
       ? `נשמרה בדיקה במחשב בלבד. מספר אסמכתה: ${result.reference}. לא נשלח ל-Drive.`
       : lanPilotMode || pilotMode
@@ -195,4 +249,5 @@ uploadForm.addEventListener('submit', async event => {
   }
 });
 
-showSession();
+if (config.mode === 'apps-script') showSessionFast();
+else showSession();
